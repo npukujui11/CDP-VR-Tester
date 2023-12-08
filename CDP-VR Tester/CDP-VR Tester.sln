@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.6.33815.320
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CDP-VR Tester", "CDP-VR Tester\CDP-VR Tester.csproj", "{0424F667-D485-4045-AB78-30827E7A3CCC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0424F667-D485-4045-AB78-30827E7A3CCC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0424F667-D485-4045-AB78-30827E7A3CCC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0424F667-D485-4045-AB78-30827E7A3CCC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0424F667-D485-4045-AB78-30827E7A3CCC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {28BFAF45-C471-426A-9DBD-19D54B018AC0}
+	EndGlobalSection
+EndGlobal

@@ -11,13 +11,22 @@ namespace CDP_VR_Tester
     {
         private bool m_IsUnilateral;
         private bool m_RunReadThread;
+        private bool m_RunSendThread;
+
+        private bool alsend_darkness = false;
+        private bool alsend_seethrough = false;
+        private bool alsend_freezepitch = false;
+        private bool alsend_pitchval = false;
+        private bool alsend_sceneval = false;
 
         private const int TRANSFERREDBYTES = 4 * 2 + 1;
+        private const int BUFFER_SIZE = 4 * 2 + 1;
         private IntPtr m_hSocket;
 
         private byte m_CurBattery, m_oldBattery; //定义两个字节变量，用于存放当前电量和上一次的电量
         private byte m_CurMajorVersion, m_oldMajorVersion, m_CurMinorVersion, m_oldMinorVersion; //定义四个字节变量，用于存放当前主版本号、上一次的主版本号、当前次版本号和上一次的次版本号
 
+        private byte CurMajorVersion = 1, CurMinorVersion = 0; //定义两个字节变量，用于存放当前主版本号和当前次版本号
         public Form1()
         {
             InitializeComponent();
@@ -40,27 +49,32 @@ namespace CDP_VR_Tester
 
         private void btnDarkness_Click(object sender, EventArgs e)
         {
-            
+            alsend_darkness = true; //设置alsend_darkness变量的值为true
+            BluetoothSendData(); //发送数据
         }
 
         private void btnSeethrough_Click(object sender, EventArgs e)
         {
-        
+            alsend_seethrough = true; //设置alsend_seethrough变量的值为true
+            BluetoothSendData(); //发送数据
         }
 
         private void btnFreezePitch_Click(object sender, EventArgs e)
         {
-
+            alsend_freezepitch = true; //设置alsend_freezepitch变量的值为true
+            BluetoothSendData(); //发送数据
         }
 
         private void btnSetPitch_Click(object sender, EventArgs e)
         {
-
+            alsend_pitchval = true; //设置alsend_pitchval变量的值为true
+            BluetoothSendData(); //发送数据
         }
 
         private void btnSetScene_Click(object sender, EventArgs e)
         {
-
+            alsend_sceneval = true; //设置alsend_sceneval变量的值为true
+            BluetoothSendData(); //发送数据
         }
 
         /*
@@ -129,6 +143,63 @@ namespace CDP_VR_Tester
                     }
                 }
             });
+        }
+
+        /*
+         * BluetoothSendData函数用于发送数据
+         * send函数用于发送数据
+         */
+        private void BluetoothSendData()
+        {
+            byte[] buffer = new byte[BUFFER_SIZE]; //定义一个字节数组，用于存放发送的数据
+
+            // 设置版本号
+            buffer[0] = CurMinorVersion;
+            buffer[1] = CurMajorVersion;
+
+            // 根据标志位设置指令
+            buffer[2] = alsend_seethrough ? (byte)0x80 : (byte)0x00; //如果alsend_seethrough变量的值为true，则将buffer数组的第三个元素的值设置为0x80，否则设置为0x00
+            buffer[3] = alsend_darkness ? (byte)0x80 : (byte)0x00; //如果alsend_darkness变量的值为true，则将buffer数组的第四个元素的值设置为0x80，否则设置为0x00
+            buffer[4] = alsend_freezepitch ? (byte)0x80 : (byte)0x00; //如果alsend_freezepitch变量的值为true，则将buffer数组的第五个元素的值设置为0x80，否则设置为0x00
+            buffer[5] = alsend_pitchval ? (byte)tb_pitch.Value : (byte)0x80; //如果alsend_pitchval变量的值为true，则将buffer数组的第六个元素的值设置为tb_pitch滑动条的值，否则设置为0x80
+            buffer[6] = alsend_sceneval ? (byte)tb_scene.Value : (byte)0x80; //如果alsend_sceneval变量的值为true，则将buffer数组的第七个元素的值设置为tb_scene滑动条的值，否则设置为0x80
+
+            // 第八和第九个字节保留
+            buffer[7] = 0x00;
+            buffer[8] = 0x00;
+
+            // 实际发送数据的方法
+            SendData(ref buffer);
+
+            // 重置标志位
+            alsend_darkness = false;
+            alsend_seethrough = false;
+            alsend_freezepitch = false;
+            alsend_pitchval = false;
+            alsend_sceneval = false;
+        }
+
+        /*
+         * SendData函数用于发送数据
+         * send函数用于发送数据
+         */
+        private void SendData(ref byte[] data)
+        {
+            m_RunReadThread = true; //设置m_RunReadThread变量的值为true
+            GCHandle pinnedArray; //定义一个GCHandle类型的变量
+            while (m_RunSendThread) //如果m_RunSendThread变量的值为true
+            {
+                try
+                {
+                    pinnedArray = GCHandle.Alloc(data, GCHandleType.Pinned); //将data数组固定在内存中
+                    send(m_hSocket, pinnedArray.AddrOfPinnedObject(), data.Length, 0); //发送数据
+                    pinnedArray.Free(); //取消固定data数组在内存中的位置
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
+            }
         }
 
         [DllImport("ws2_32.dll", CharSet = CharSet.Unicode, SetLastError = true)]

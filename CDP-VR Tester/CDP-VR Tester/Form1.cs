@@ -9,8 +9,14 @@ namespace CDP_VR_Tester
 {
     public partial class Form1 : Form
     {
+        private bool m_IsUnilateral;
         private bool m_RunReadThread;
+
+        private const int TRANSFERREDBYTES = 4 * 2 + 1;
         private IntPtr m_hSocket;
+
+        private byte m_CurBattery, m_oldBattery; //定义两个字节变量，用于存放当前电量和上一次的电量
+        private byte m_CurMajorVersion, m_oldMajorVersion, m_CurMinorVersion, m_oldMinorVersion; //定义四个字节变量，用于存放当前主版本号、上一次的主版本号、当前次版本号和上一次的次版本号
 
         public Form1()
         {
@@ -34,12 +40,12 @@ namespace CDP_VR_Tester
 
         private void btnDarkness_Click(object sender, EventArgs e)
         {
-
+            
         }
 
         private void btnSeethrough_Click(object sender, EventArgs e)
         {
-
+        
         }
 
         private void btnFreezePitch_Click(object sender, EventArgs e)
@@ -63,7 +69,66 @@ namespace CDP_VR_Tester
          */
         private void BluetoothReadThread()
         {
+            byte[] buffer = new byte[TRANSFERREDBYTES]; //定义一个字节数组，用于存放接收到的数据
+            GCHandle pinnedArray; //定义一个GCHandle类型的变量
+            m_RunReadThread = true; //设置m_RunReadThread变量的值为true
+            while (m_RunReadThread) //如果m_RunReadThread变量的值为true
+            {
+                try
+                {
+                    pinnedArray = GCHandle.Alloc(buffer, GCHandleType.Pinned); //将buffer数组固定在内存中
+                    int ret = recv(m_hSocket, pinnedArray.AddrOfPinnedObject(), TRANSFERREDBYTES, 0);
+                    pinnedArray.Free(); //取消固定buffer数组在内存中的位置
+                    if (ret == TRANSFERREDBYTES)
+                    {
+                        ProcessReadData(ref buffer); //处理接收到的数据
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
+            }
+        }
 
+        /*
+         * ProcessReadData函数用于处理接收到的数据             
+         */
+        private void ProcessReadData(ref byte[] received)
+        {
+            short i = 0;
+
+            i = BitConverter.ToInt16(received, 0); //将received数组中的前两个元素转换为short类型的数据
+            m_CurMinorVersion = (byte)(i & 0xFF); //将i变量的低8位赋值给m_CurMinorVersion变量
+            m_CurMajorVersion = (byte)((i >> 8) & 0xFF); //将i变量的高8位赋值给m_CurMajorVersion变量
+
+            m_CurBattery = received[2]; //将received数组中的第三个元素赋值给m_CurBattery变量
+            bool but = ((m_CurBattery & 0x80) != 0); //判断m_CurBattery变量的最高位是否为1
+            m_CurBattery = (byte)(m_CurBattery & 0x7F); //将m_CurBattery变量的最高位置为0
+
+            this.Invoke((MethodInvoker)delegate
+            {
+                if (m_CurMajorVersion != m_oldMajorVersion || m_CurMinorVersion != m_oldMinorVersion) //如果当前主版本号和上一次的主版本号不相等或者当前次版本号和上一次的次版本号不相等
+                {
+                    m_oldMajorVersion = m_CurMajorVersion; //将当前主版本号赋值给上一次的主版本号
+                    m_oldMinorVersion = m_CurMinorVersion; //将当前次版本号赋值给上一次的次版本号
+                    lbVersion.Text = "CDP-VR Tester - Version: " + m_CurMajorVersion.ToString() + "." + m_CurMinorVersion.ToString(); //设置窗体的标题栏的文本
+                }
+                if (m_CurBattery != m_oldBattery) //如果当前电量和上一次的电量不相等
+                {
+                    m_oldBattery = m_CurBattery; //将当前电量赋值给上一次的电量
+                    if (but) //如果m_CurBattery变量的最高位为1
+                    {
+                        lbBattery.Text = "CDP-VR Tester - Battery: " + m_CurBattery.ToString() + "%"; //设置窗体的标题栏的文本
+                        pbBattery.Value = m_CurBattery; //设置pbBattery进度条的值
+                    }
+                    else //如果m_CurBattery变量的最高位为0
+                    {
+                        lbBattery.Text = "CDP-VR Tester - Battery: " + m_CurBattery.ToString() + "% (Charging)"; //设置窗体的标题栏的文本
+                        pbBattery.Value = m_CurBattery; //设置pbBattery进度条的值
+                    }
+                }
+            });
         }
 
         [DllImport("ws2_32.dll", CharSet = CharSet.Unicode, SetLastError = true)]

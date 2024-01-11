@@ -37,7 +37,7 @@ namespace CDP_VR_Tester
                 try
                 {
                     BluetoothDeviceInfo deviceToConnect = deviceList[lb_devicelist.SelectedIndex]; //获取要连接的蓝牙设备
-                    bluetoothClient = new BluetoothClient(); //实例化蓝牙客户端对象
+                     bluetoothClient = new BluetoothClient(); //实例化蓝牙客户端对象
                     bluetoothClient.BeginConnect(deviceToConnect.DeviceAddress, BluetoothService.SerialPort, new AsyncCallback(ConnectCallback), bluetoothClient); //开始连接蓝牙设备
                     Btn_Disconnect.Enabled = true; //启用断开连接按钮
                 }
@@ -61,8 +61,10 @@ namespace CDP_VR_Tester
                 MessageBox.Show("蓝牙设备连接成功！");
 
                 //启动接收数据线程
-                Thread readThread = new Thread(new ThreadStart(ReceiveData));
-                readThread.IsBackground = true;
+                Thread readThread = new Thread(new ThreadStart(ReceiveData))
+                {
+                    IsBackground = true
+                };
                 readThread.Start();
             }
             catch (Exception ex)
@@ -76,6 +78,7 @@ namespace CDP_VR_Tester
             try 
             {
                 byte[] buffer = new byte[TRANSFERREDBYTES]; // 定义一个字节数组，用于存放接收到的数据
+
                 while (true)
                 {
                     if (bluetoothClient != null && bluetoothClient.Connected)
@@ -92,26 +95,44 @@ namespace CDP_VR_Tester
                         // 适当处理连接丢失的情况
                         break;
                     }
+                    Thread.Sleep(100); // 线程休眠100毫秒
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"接收数据过程中出错: {ex.Message}");
+                this.Invoke((MethodInvoker)delegate
+                {
+                    MessageBox.Show($"接收数据过程中出错: {ex.Message}");
+                });
             }
         }
 
         private void ProcessReceivedData(byte[] buffer, int bytesRead)
         {
-            // 解析接收到的数据
-            m_CurBattery = buffer[0]; //获取当前电量
-            m_CurMajorVersion = buffer[1]; //获取当前主版本号
-            m_CurMinorVersion = buffer[2]; //获取当前次版本号
-            if (m_CurBattery != m_oldBattery || m_CurMajorVersion != m_oldMajorVersion || m_CurMinorVersion != m_oldMinorVersion)
+
+            // 确保接收到的数据至少有3个字节
+            if (bytesRead >= 3)
             {
-                UpdateUI(m_CurBattery, m_CurMajorVersion, m_CurMinorVersion); //更新界面
-                m_oldBattery = m_CurBattery; //将当前电量赋值给上一次的电量
-                m_oldMajorVersion = m_CurMajorVersion; //将当前主版本号赋值给上一次的主版本号
-                m_oldMinorVersion = m_CurMinorVersion; //将当前次版本号赋值给上一次的次版本号
+                // 解析接收到的数据
+                m_CurBattery = buffer[0]; //获取当前电量
+                m_CurMajorVersion = buffer[1]; //获取当前主版本号
+                m_CurMinorVersion = buffer[2]; //获取当前次版本号
+
+                //判断当前电量、当前主版本号和当前次版本号是否与上一次的电量、主版本号和次版本号相同
+                //如果不相同，则更新界面
+                if (m_CurBattery != m_oldBattery || m_CurMajorVersion != m_oldMajorVersion || m_CurMinorVersion != m_oldMinorVersion)
+                {
+                    // 使用 Invoke 在 UI 线程上更新 UI
+                    this.Invoke((MethodInvoker)delegate
+                    {
+                        UpdateUI(m_CurBattery, m_CurMajorVersion, m_CurMinorVersion); //更新界面
+                    });
+
+                    // 更新上一次的电量、主版本号和次版本号
+                    m_oldBattery = m_CurBattery; //将当前电量赋值给上一次的电量
+                    m_oldMajorVersion = m_CurMajorVersion; //将当前主版本号赋值给上一次的主版本号
+                    m_oldMinorVersion = m_CurMinorVersion; //将当前次版本号赋值给上一次的次版本号
+                }
             }
         }
 
@@ -157,13 +178,13 @@ namespace CDP_VR_Tester
             }
             // 更新版本号
             string version = $"{majorVersion}.{minorVersion}";
-            if (lbVersion.InvokeRequired)
+            if (tbVersion.InvokeRequired)
             {
-                lbVersion.Invoke(new Action(() => lbVersion.Text = version));
+                tbVersion.Invoke(new Action(() => tbVersion.Text = version));
             }
             else
             {
-                lbVersion.Text = version;
+                tbVersion.Text = version;
             }
         }
 

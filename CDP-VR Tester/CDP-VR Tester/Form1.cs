@@ -25,6 +25,8 @@ namespace CDP_VR_Tester
 
         private BluetoothDeviceInfo[] deviceList; // 存储搜索到的设备列表
 
+        Guid serialPortUUID = new Guid("00001101-0000-1000-8000-00805F9B34FB");
+
         public Form1()
         {
             InitializeComponent();
@@ -37,8 +39,8 @@ namespace CDP_VR_Tester
                 try
                 {
                     BluetoothDeviceInfo deviceToConnect = deviceList[lb_devicelist.SelectedIndex]; //获取要连接的蓝牙设备
-                     bluetoothClient = new BluetoothClient(); //实例化蓝牙客户端对象
-                    bluetoothClient.BeginConnect(deviceToConnect.DeviceAddress, BluetoothService.SerialPort, new AsyncCallback(ConnectCallback), bluetoothClient); //开始连接蓝牙设备
+                    bluetoothClient = new BluetoothClient(); //实例化蓝牙客户端对象
+                    bluetoothClient.BeginConnect(deviceToConnect.DeviceAddress, serialPortUUID, new AsyncCallback(ConnectCallback), bluetoothClient); //开始连接蓝牙设备
                     Btn_Disconnect.Enabled = true; //启用断开连接按钮
                 }
                 catch (Exception ex)

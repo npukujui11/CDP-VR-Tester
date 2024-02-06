@@ -128,7 +128,7 @@
             this.tb_pitch.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.tb_pitch.Minimum = -10;
             this.tb_pitch.Name = "tb_pitch";
-            this.tb_pitch.Size = new System.Drawing.Size(388, 69);
+            this.tb_pitch.Size = new System.Drawing.Size(388, 45);
             this.tb_pitch.TabIndex = 6;
             // 
             // tb_scene
@@ -138,7 +138,7 @@
             this.tb_scene.Maximum = 3;
             this.tb_scene.Minimum = 1;
             this.tb_scene.Name = "tb_scene";
-            this.tb_scene.Size = new System.Drawing.Size(388, 69);
+            this.tb_scene.Size = new System.Drawing.Size(388, 45);
             this.tb_scene.TabIndex = 7;
             this.tb_scene.Value = 1;
             // 
@@ -155,7 +155,7 @@
             this.lbVersion.AutoSize = true;
             this.lbVersion.Location = new System.Drawing.Point(54, 87);
             this.lbVersion.Name = "lbVersion";
-            this.lbVersion.Size = new System.Drawing.Size(63, 20);
+            this.lbVersion.Size = new System.Drawing.Size(43, 15);
             this.lbVersion.TabIndex = 10;
             this.lbVersion.Text = "版本号";
             // 
@@ -164,7 +164,7 @@
             this.lbBattery.AutoSize = true;
             this.lbBattery.Location = new System.Drawing.Point(54, 32);
             this.lbBattery.Name = "lbBattery";
-            this.lbBattery.Size = new System.Drawing.Size(45, 20);
+            this.lbBattery.Size = new System.Drawing.Size(31, 15);
             this.lbBattery.TabIndex = 11;
             this.lbBattery.Text = "电量";
             // 
@@ -193,7 +193,7 @@
             this.Cb_bluetooth.AutoSize = true;
             this.Cb_bluetooth.Location = new System.Drawing.Point(58, 143);
             this.Cb_bluetooth.Name = "Cb_bluetooth";
-            this.Cb_bluetooth.Size = new System.Drawing.Size(71, 24);
+            this.Cb_bluetooth.Size = new System.Drawing.Size(50, 19);
             this.Cb_bluetooth.TabIndex = 15;
             this.Cb_bluetooth.Text = "蓝牙";
             this.Cb_bluetooth.UseVisualStyleBackColor = true;
@@ -214,22 +214,22 @@
             // lb_devicelist
             // 
             this.lb_devicelist.FormattingEnabled = true;
-            this.lb_devicelist.ItemHeight = 20;
+            this.lb_devicelist.ItemHeight = 15;
             this.lb_devicelist.Location = new System.Drawing.Point(42, 191);
             this.lb_devicelist.Name = "lb_devicelist";
-            this.lb_devicelist.Size = new System.Drawing.Size(386, 84);
+            this.lb_devicelist.Size = new System.Drawing.Size(386, 79);
             this.lb_devicelist.TabIndex = 17;
             // 
             // tbVersion
             // 
             this.tbVersion.Location = new System.Drawing.Point(133, 84);
             this.tbVersion.Name = "tbVersion";
-            this.tbVersion.Size = new System.Drawing.Size(297, 28);
+            this.tbVersion.Size = new System.Drawing.Size(297, 21);
             this.tbVersion.TabIndex = 18;
             // 
             // Form1
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 20F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(474, 897);
             this.Controls.Add(this.tbVersion);

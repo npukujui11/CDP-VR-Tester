@@ -1,8 +1,10 @@
 ﻿using System;
+using System.IO;
+using System.Threading;
 using System.Windows.Forms;
+using InTheHand.Net;
 using InTheHand.Net.Sockets;
 using InTheHand.Net.Bluetooth;
-using System.Threading;
 
 namespace CDP_VR_Tester
 {
@@ -23,9 +25,13 @@ namespace CDP_VR_Tester
         
         private BluetoothClient bluetoothClient; //定义蓝牙客户端对象
 
+        private BluetoothRadio bluetoothRadio; //定义蓝牙适配器对象
+
         private BluetoothDeviceInfo[] deviceList; // 存储搜索到的设备列表
 
-        Guid serialPortUUID = new Guid("00001101-0000-1000-8000-00805F9B34FB");
+        //Guid serialPortUUID = new Guid("00001101-0000-1000-8000-00805F9B34FB");
+        //Guid mGUID = Guid.Parse("c1db6770-a359-11e6-80f5-76304dec7eb7");
+        Guid mGUID = Guid.Parse("00001101-0000-1000-8000-00805F9B34FB");
 
         public Form1()
         {
@@ -39,8 +45,9 @@ namespace CDP_VR_Tester
                 try
                 {
                     BluetoothDeviceInfo deviceToConnect = deviceList[lb_devicelist.SelectedIndex]; //获取要连接的蓝牙设备
+
                     bluetoothClient = new BluetoothClient(); //实例化蓝牙客户端对象
-                    bluetoothClient.BeginConnect(deviceToConnect.DeviceAddress, serialPortUUID, new AsyncCallback(ConnectCallback), bluetoothClient); //开始连接蓝牙设备
+                    bluetoothClient.BeginConnect(deviceToConnect.DeviceAddress, mGUID, new AsyncCallback(ConnectCallback), bluetoothClient); //开始连接蓝牙设备
                     Btn_Disconnect.Enabled = true; //启用断开连接按钮
                 }
                 catch (Exception ex)
@@ -192,6 +199,8 @@ namespace CDP_VR_Tester
 
         private void Btn_Disconnect_Click(object sender, EventArgs e)
         {
+            bluetoothRadio.Mode = RadioMode.PowerOff; //关闭蓝牙适配器
+
             if (bluetoothClient != null && bluetoothClient.Connected) //判断蓝牙设备是否已连接
             {
                 try
@@ -237,6 +246,12 @@ namespace CDP_VR_Tester
             BluetoothSendData(); //发送数据
         }
 
+        private void Btn_SetScene_Click(object sender, EventArgs e)
+        {
+            alsend_sceneval = true; //设置alsend_sceneval变量的值为true
+            BluetoothSendData(); //发送数据
+        }
+
         private void Cb_bluetooth_CheckedChanged(object sender, EventArgs e)
         {
             if (Cb_bluetooth.Checked)
@@ -251,12 +266,6 @@ namespace CDP_VR_Tester
             }
         }
 
-        private void Btn_SetScene_Click(object sender, EventArgs e)
-        {
-            alsend_sceneval = true; //设置alsend_sceneval变量的值为true
-            BluetoothSendData(); //发送数据
-        }
-
         private void StartBluetooth()
         {
             try 
@@ -269,7 +278,8 @@ namespace CDP_VR_Tester
                 }
 
                 //获取本地蓝牙适配器
-                BluetoothRadio bluetoothRadio = BluetoothRadio.PrimaryRadio;
+                bluetoothRadio = BluetoothRadio.PrimaryRadio;
+
                 if (bluetoothRadio == null)
                 {
                     MessageBox.Show("当前电脑没有蓝牙适配器或蓝牙适配器不可用！");
@@ -301,9 +311,12 @@ namespace CDP_VR_Tester
         {
             //关闭蓝牙功能
             BluetoothRadio.PrimaryRadio.Mode = RadioMode.PowerOff;
-            //关闭蓝牙服务
-            BluetoothListener bluelistener = new BluetoothListener(BluetoothService.SerialPort);
-            bluelistener.Stop();
+
+            if (bluetoothClient != null && bluetoothClient.Connected)
+            {
+                bluetoothClient.Close();
+                bluetoothClient.Dispose();
+            }
 
             MessageBox.Show("蓝牙功能已关闭！");
         }

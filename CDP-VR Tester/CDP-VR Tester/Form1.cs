@@ -95,6 +95,7 @@ namespace CDP_VR_Tester
                         int bytesRead = bluetoothClient.GetStream().Read(buffer, 0, TRANSFERREDBYTES); //接收数据
                         if (bytesRead > 0)
                         {
+                            bluetoothClient.GetStream().Write(buffer, 0, TRANSFERREDBYTES); //发送数据
                             //处理接收到的数据
                             ProcessReceivedData(buffer, bytesRead);
                         }
@@ -118,6 +119,8 @@ namespace CDP_VR_Tester
 
         private void ProcessReceivedData(byte[] buffer, int bytesRead)
         {
+            string timeStamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            AppendTextToRichTextBox($"{timeStamp} RX: " + BitConverter.ToString(buffer, 0, bytesRead).Replace("-", " "));
 
             // 确保接收到的数据至少有3个字节
             if (bytesRead >= 3)
@@ -266,6 +269,19 @@ namespace CDP_VR_Tester
             }
         }
 
+        private void AppendTextToRichTextBox(string text)
+        {
+            if (richTextBox1.InvokeRequired)
+            {
+                richTextBox1.Invoke(new Action<string>(AppendTextToRichTextBox), new object[] { text });
+            }
+            else
+            {
+                richTextBox1.AppendText(text + Environment.NewLine);
+                // 滚动到RichTextBox的末尾
+                richTextBox1.ScrollToCaret();
+            }
+        }
         private void StartBluetooth()
         {
             try 
@@ -379,6 +395,9 @@ namespace CDP_VR_Tester
                 if (bluetoothClient != null && bluetoothClient.Connected) //判断蓝牙设备是否已连接
                 {
                     bluetoothClient.GetStream().Write(buffer, 0, TRANSFERREDBYTES); //发送数据
+
+                    string timeStamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                    AppendTextToRichTextBox($"{timeStamp} TX: " + BitConverter.ToString(buffer).Replace("-"," "));
                     MessageBox.Show("数据发送成功！");
                     
                 }

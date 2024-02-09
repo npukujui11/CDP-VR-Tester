@@ -95,7 +95,6 @@ namespace CDP_VR_Tester
                         int bytesRead = bluetoothClient.GetStream().Read(buffer, 0, TRANSFERREDBYTES); //接收数据
                         if (bytesRead > 0)
                         {
-                            bluetoothClient.GetStream().Write(buffer, 0, TRANSFERREDBYTES); //发送数据
                             //处理接收到的数据
                             ProcessReceivedData(buffer, bytesRead);
                         }

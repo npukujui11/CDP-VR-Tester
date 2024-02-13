@@ -1,14 +1,16 @@
 ﻿using System;
-using System.IO;
-using System.Threading;
+using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
 using System.Windows.Forms;
-using InTheHand.Net;
-using InTheHand.Net.Sockets;
-using InTheHand.Net.Bluetooth;
+using Windows.Devices.Bluetooth;
+using Windows.Devices.Bluetooth.Advertisement;
+using Windows.Devices.Bluetooth.GenericAttributeProfile;
+
 
 namespace CDP_VR_Tester
 {
-    public partial class Form1 : Form
+    public partial class CDPVR : Form
     {
         private readonly byte CurMajorVersion = 1, CurMinorVersion = 0; //定义两个字节变量，用于存放当前主版本号和当前次版本号
 
@@ -22,22 +24,21 @@ namespace CDP_VR_Tester
 
         private byte m_CurBattery, m_oldBattery; //定义两个字节变量，用于存放当前电量和上一次的电量
         private byte m_CurMajorVersion, m_oldMajorVersion, m_CurMinorVersion, m_oldMinorVersion; //定义四个字节变量，用于存放当前主版本号、上一次的主版本号、当前次版本号和上一次的次版本号
-        
-        private BluetoothClient bluetoothClient; //定义蓝牙客户端对象
 
-        private BluetoothRadio bluetoothRadio; //定义蓝牙适配器对象
+        private BluetoothLEAdvertisementWatcher watcher = new BluetoothLEAdvertisementWatcher(); // 定义一个蓝牙广播监听器对象
+        private GattCharacteristic dataCharacteristic; // 定义一个GATT特征对象
+        private GattServiceProvider serviceProvider; // 定义一个GATT服务提供者对象
+        private BluetoothLEAdvertisementPublisher publisher; // 定义一个蓝牙广播发布者对象
 
-        private BluetoothDeviceInfo[] deviceList; // 存储搜索到的设备列表
+        private const string CustomServiceUUID = "0000FFE0-0000-1000-8000-00805F9B34FB";
+        private const string CustomCharacteristicUUID = "0000FFE1-0000-1000-8000-00805F9B34FB";
 
-        //Guid serialPortUUID = new Guid("00001101-0000-1000-8000-00805F9B34FB");
-        //Guid mGUID = Guid.Parse("c1db6770-a359-11e6-80f5-76304dec7eb7");
-        Guid mGUID = Guid.Parse("00001101-0000-1000-8000-00805F9B34FB");
-
-        public Form1()
+        public CDPVR()
         {
             InitializeComponent();
         }
 
+        /*
         private void Btn_Connect_Click(object sender, EventArgs e)
         {
             if (lb_devicelist.SelectedIndex >= 0 && deviceList != null && lb_devicelist.SelectedIndex < deviceList.Length)
@@ -60,7 +61,9 @@ namespace CDP_VR_Tester
                 MessageBox.Show("请先选择要连接的蓝牙设备！");
             }
         }
+        */
 
+        /*
         private void ConnectCallback(IAsyncResult ar)
         {
             try
@@ -81,7 +84,9 @@ namespace CDP_VR_Tester
                 MessageBox.Show($"连接蓝牙设备过程中出错: {ex.Message}");
             }
         }
+        */
 
+        /*
         private void ReceiveData()
         {
             try 
@@ -115,37 +120,7 @@ namespace CDP_VR_Tester
                 });
             }
         }
-
-        private void ProcessReceivedData(byte[] buffer, int bytesRead)
-        {
-            string timeStamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-            AppendTextToRichTextBox($"{timeStamp} RX: " + BitConverter.ToString(buffer, 0, bytesRead).Replace("-", " "));
-
-            // 确保接收到的数据至少有3个字节
-            if (bytesRead >= 3)
-            {
-                // 解析接收到的数据
-                m_CurBattery = buffer[0]; //获取当前电量
-                m_CurMajorVersion = buffer[1]; //获取当前主版本号
-                m_CurMinorVersion = buffer[2]; //获取当前次版本号
-
-                //判断当前电量、当前主版本号和当前次版本号是否与上一次的电量、主版本号和次版本号相同
-                //如果不相同，则更新界面
-                if (m_CurBattery != m_oldBattery || m_CurMajorVersion != m_oldMajorVersion || m_CurMinorVersion != m_oldMinorVersion)
-                {
-                    // 使用 Invoke 在 UI 线程上更新 UI
-                    this.Invoke((MethodInvoker)delegate
-                    {
-                        UpdateUI(m_CurBattery, m_CurMajorVersion, m_CurMinorVersion); //更新界面
-                    });
-
-                    // 更新上一次的电量、主版本号和次版本号
-                    m_oldBattery = m_CurBattery; //将当前电量赋值给上一次的电量
-                    m_oldMajorVersion = m_CurMajorVersion; //将当前主版本号赋值给上一次的主版本号
-                    m_oldMinorVersion = m_CurMinorVersion; //将当前次版本号赋值给上一次的次版本号
-                }
-            }
-        }
+        */
 
         /*
         private void ReadData()
@@ -199,6 +174,7 @@ namespace CDP_VR_Tester
             }
         }
 
+        /*
         private void Btn_Disconnect_Click(object sender, EventArgs e)
         {
             bluetoothRadio.Mode = RadioMode.PowerOff; //关闭蓝牙适配器
@@ -223,35 +199,36 @@ namespace CDP_VR_Tester
                 Btn_Disconnect.Enabled = false; // 禁用断开连接按钮
             }
         }
+        */ 
 
-        private void Btn_Darkness_Click(object sender, EventArgs e)
+        private async void Btn_Darkness_Click(object sender, EventArgs e)
         {
             alsend_darkness = true; //设置alsend_darkness变量的值为true
-            BluetoothSendData(); //发送数据
+            await BluetoothSendData(); //发送数据
         }
 
-        private void Btn_Seethrough_Click(object sender, EventArgs e)
+        private async void Btn_Seethrough_Click(object sender, EventArgs e)
         {
             alsend_seethrough = true; //设置alsend_seethrough变量的值为true
-            BluetoothSendData(); //发送数据
+            await BluetoothSendData(); //发送数据
         }
 
-        private void Btn_FreezePitch_Click(object sender, EventArgs e)
+        private async void Btn_FreezePitch_Click(object sender, EventArgs e)
         {
             alsend_freezepitch = true; //设置alsend_freezepitch变量的值为true
-            BluetoothSendData(); //发送数据
+            await BluetoothSendData(); //发送数据
         }
 
-        private void Btn_SetPitch_Click(object sender, EventArgs e)
+        private async void Btn_SetPitch_Click(object sender, EventArgs e)
         {
             alsend_pitchval = true; //设置alsend_pitchval变量的值为true
-            BluetoothSendData(); //发送数据
+            await BluetoothSendData(); //发送数据
         }
 
-        private void Btn_SetScene_Click(object sender, EventArgs e)
+        private async void Btn_SetScene_Click(object sender, EventArgs e)                                                                  
         {
             alsend_sceneval = true; //设置alsend_sceneval变量的值为true
-            BluetoothSendData(); //发送数据
+            await BluetoothSendData(); //发送数据
         }
 
         private void Cb_bluetooth_CheckedChanged(object sender, EventArgs e)
@@ -281,64 +258,104 @@ namespace CDP_VR_Tester
                 richTextBox1.ScrollToCaret();
             }
         }
-        private void StartBluetooth()
+       
+        private async void StartBluetooth()
         {
-            try 
+            //watcher.ScanningMode = BluetoothLEScanningMode.Active; //设置蓝牙扫描模式为被动模式
+            //watcher.AdvertisementFilter.Advertisement.ServiceUuids.Add(new Guid(CustomServiceUUID)); //设置广播过滤器，只监听自定义服务的广播
+
+            publisher = new BluetoothLEAdvertisementPublisher();
+            serviceProvider = await GattServiceProvider.CreateAsync(new Guid(CustomServiceUUID)); //创建自定义服务
+
+
+            watcher.Received += Watcher_Received; //注册广播接收事件
+            watcher.Stopped += Watcher_Stopped; //注册广播停止事件
+
+            watcher.Start(); //开始监听蓝牙广播
+        }
+
+        private async void Watcher_Received(BluetoothLEAdvertisementWatcher sender, BluetoothLEAdvertisementReceivedEventArgs args)
+        {
+            // 连接到中心设备
+            var device = await BluetoothLEDevice.FromBluetoothAddressAsync(args.BluetoothAddress);
+            var service = (await device.GetGattServicesAsync()).Services.FirstOrDefault(s => s.Uuid == new Guid(CustomServiceUUID)); //获取自定义服务
+
+            if (service != null)
             {
-                //检查蓝牙适配器是否可用
-                if (!BluetoothRadio.IsSupported)
+                dataCharacteristic = (await service.GetCharacteristicsAsync()).Characteristics.FirstOrDefault(c => c.Uuid == new Guid(CustomCharacteristicUUID));
+
+                if (dataCharacteristic != null)
                 {
-                    MessageBox.Show("当前电脑没有蓝牙适配器或蓝牙适配器不可用！");
-                    return;
+                    // 开始监听数据
+                    dataCharacteristic.ValueChanged += ProcessReceivedData;
+                    await dataCharacteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue.Notify);
                 }
+            }  
+        }
 
-                //获取本地蓝牙适配器
-                bluetoothRadio = BluetoothRadio.PrimaryRadio;
+        private void Watcher_Stopped(BluetoothLEAdvertisementWatcher sender, BluetoothLEAdvertisementWatcherStoppedEventArgs args)
+        {
+            // 处理停止扫描的情况
+            MessageBox.Show("Bluetooth scanning stopped. Reason: " + args.Error.ToString());
+        }
 
-                if (bluetoothRadio == null)
-                {
-                    MessageBox.Show("当前电脑没有蓝牙适配器或蓝牙适配器不可用！");
-                    return;
-                }
+        private void ProcessReceivedData(GattCharacteristic sender, GattValueChangedEventArgs args)
+        {
+            // 处理接收到的数据
+            var buffer = args.CharacteristicValue.ToArray();
 
-                //确保蓝牙适配器是开启的
-                if (bluetoothRadio.Mode != RadioMode.Discoverable)
-                {
-                    bluetoothRadio.Mode = RadioMode.Discoverable;
-                }
+            string timeStamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            AppendTextToRichTextBox($"{timeStamp} RX: " + BitConverter.ToString(buffer, 0, buffer.Length).Replace("-", " "));
 
-                /*
-                //开始搜索附近的蓝牙设备、
-                bluetoothClient.BeginDiscoverDevices(255, true, true, true, false, null, null);
-                MessageBox.Show("开始搜索附近的蓝牙设备！");
-                */
-            }
-
-            catch (Exception ex)
+            if (buffer.Length >= 3)
             {
-                MessageBox.Show($"启动蓝牙过程中出错: {ex.Message}");
-            }
+                // 解析接收到的数据
+                m_CurBattery = buffer[0];
+                m_CurMajorVersion = buffer[1];
+                m_CurMinorVersion = buffer[2];
 
-            MessageBox.Show("蓝牙功能已启动！");
+                //判断当前电量、当前主版本号和当前次版本号是否与上一次的电量、主版本号和次版本号相同
+                //如果不相同，则更新界面
+                if (m_CurBattery != m_oldBattery || m_CurMajorVersion != m_oldMajorVersion || m_CurMinorVersion != m_oldMinorVersion)
+                {
+                    // 使用 Invoke 在 UI 线程上更新 UI
+                    this.Invoke((MethodInvoker)delegate
+                    {
+                        UpdateUI(m_CurBattery, m_CurMajorVersion, m_CurMinorVersion); //更新界面
+                    });
+
+                    // 更新上一次的电量、主版本号和次版本号
+                    m_oldBattery = m_CurBattery; //将当前电量赋值给上一次的电量
+                    m_oldMajorVersion = m_CurMajorVersion; //将当前主版本号赋值给上一次的主版本号
+                    m_oldMinorVersion = m_CurMinorVersion; //将当前次版本号赋值给上一次的次版本号
+                }
+            }
         }
 
         private void StopBluetooth()
         {
             //关闭蓝牙功能
-            BluetoothRadio.PrimaryRadio.Mode = RadioMode.PowerOff;
-
-            if (bluetoothClient != null && bluetoothClient.Connected)
+            if (watcher != null)
             {
-                bluetoothClient.Close();
-                bluetoothClient.Dispose();
-            }
+                watcher.Stop(); //停止监听蓝牙广播
+                watcher.Received -= Watcher_Received; //取消注册广播接收事件
+                watcher.Stopped -= Watcher_Stopped; //取消注册广播停止事件
+                watcher = null;
 
-            MessageBox.Show("蓝牙功能已关闭！");
+                // 断开蓝牙设备连接
+                if (dataCharacteristic != null)
+                {
+                    dataCharacteristic.ValueChanged -= ProcessReceivedData;
+                    dataCharacteristic = null;
+                }
+            }
         }
 
-        /*
+        
+        /**
          * 查找蓝牙设备
          */
+        /*
         private void Btn_FindDevice_Click(object sender, EventArgs e)
         {
             //检查蓝牙适配器是否可用
@@ -371,8 +388,9 @@ namespace CDP_VR_Tester
                 MessageBox.Show("请先启动蓝牙功能！");
             }
         }
+        */
 
-        private void BluetoothSendData() 
+        private async Task BluetoothSendData() 
         {
             byte[] buffer = new byte[TRANSFERREDBYTES]; //定义一个字节数组，用于存放要发送的数据
 
@@ -391,14 +409,14 @@ namespace CDP_VR_Tester
 
             try 
             {
-                if (bluetoothClient != null && bluetoothClient.Connected) //判断蓝牙设备是否已连接
+                if (dataCharacteristic != null)
                 {
-                    bluetoothClient.GetStream().Write(buffer, 0, TRANSFERREDBYTES); //发送数据
+                    await dataCharacteristic.WriteValueAsync(buffer.AsBuffer());
 
                     string timeStamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                     AppendTextToRichTextBox($"{timeStamp} TX: " + BitConverter.ToString(buffer).Replace("-"," "));
-                    MessageBox.Show("数据发送成功！");
                     
+                    MessageBox.Show("数据发送成功！");    
                 }
                 else //蓝牙设备未连接
                 {
